@@ -93,6 +93,10 @@ function Slot:status()
    end
 end
 
+function Slot:get_current_line()
+   return C.sv_get_current_line(self.id)
+end
+
 -- function Slot:set_looping(bool)
 --    C.sv_set_autostop(self.id, bool and 1 or 0)
 -- end
@@ -168,5 +172,37 @@ function Module:send_event(event)
    C.sv_send_event(self.slot, track, note, vel, self.id+1, ctl, ctl_val)
 end
 
+function Slot:new_pattern(name)
+   self:lock()
+   local id = C.sv_new_pattern(self.id, -1, 0, 0, 4, 32, 0, name)
+   self:unlock()
+
+   return Pattern(self.id, id)
+end
+
+function Slot:get_pattern(name)
+   local id = C.sv_find_pattern(self.id, name)
+
+   return Pattern(self.id, id)
+end
+
+function Slot:write_from_to(from, to, at)
+   for track = 0, C.sv_get_pattern_tracks(self.id, from.id)-1 do
+      for line = 0, C.sv_get_pattern_lines(self.id, from.id)-1 do
+         local nn = C.sv_get_pattern_event(self.id, from.id, track, line, 0)
+         local vv = C.sv_get_pattern_event(self.id, from.id, track, line, 1)
+         local mm = C.sv_get_pattern_event(self.id, from.id, track, line, 2)
+         local ccee = C.sv_get_pattern_event(self.id, from.id, track, line, 3)
+         local xxyy = C.sv_get_pattern_event(self.id, from.id, track, line, 4)
+
+         C.sv_set_pattern_event(self.id, to.id, track, line+at, nn, vv, mm, ccee, xxyy)
+      end
+   end
+end
+
+function Pattern:__new(slot, id)
+   self.slot = slot
+   self.id = id
+end
 
 return Sunvox
